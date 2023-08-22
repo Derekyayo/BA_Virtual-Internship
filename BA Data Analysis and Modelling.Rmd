@@ -1,0 +1,269 @@
+---
+title: "BA Project Data Analysis and Modelling"
+author: "Usman Yahaya"
+date: "2023-08-19"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Step 1: Tokenization
+Tokenization is the process of breaking the text into smaller pieces called Tokens. It can be performed at sentences(sentence tokenization) or word level(word tokenization).
+Step 2: Tokenization
+Tokenization is the process of breaking the text into smaller pieces called Tokens. It can be performed at sentences(sentence tokenization) or word level(word tokenization).
+
+Step 3: Enrichment – POS tagging
+Parts of Speech (POS) tagging is a process of converting each token into a tuple having the form (word, tag). POS tagging essential to preserve the context of the word and is essential for Lemmatization.
+
+Step 4: Stopwords removal
+Stopwords in English are words that carry very little useful information. We need to remove them as part of text preprocessing. nltk has a list of stopwords of every language.
+
+The following steps above are elements in carrying out topic modelling. 
+
+Lets first load the required libraries.
+```{r}
+library(tidyverse)
+library(janitor)
+
+library(topicmodels)
+library(tm)
+```
+
+## Loading required package: NLP
+
+```{r}
+library(SnowballC)
+library(wordcloud)
+```
+
+## Loading required package: RColorBrewer
+
+```{r}
+library(RColorBrewer)
+library(syuzhet)
+library(ggplot2)
+```
+
+```{r}
+library(tidytext)
+```
+
+
+Introduction
+
+Topic models are a novel method for obtaining information from digital data. They are about modelling which data elements are likely to be from the same topic or theme, as the name implies. By providing a computer programme with data, topic model algorithms allow us to assign papers or other information (such as photographs or videos) to themes that are important to people. The outcomes of an unsupervised learning process are the themes, which can be searched or browsed to access the original data set.
+
+Therefore, its application to uncover insights from customers feedback is a model best fit. 
+
+The aim of topic modeling is to discover the themes that run through a corpus by analyzing the words of the original texts. Topic modeling provides us with methods to organize, understand and summarize large collections of textual information . It helps in discovering hidden topical patterns that are present across the collection and annotating documents according to these topics
+
+Assumptions
+
+All topic models are based on the same basic assumption:
+
+Each document consists of a mixture of topics, and each topic consists of a collection of words.In other words.
+
+
+Description of data set
+
+lets read our csv file with the help of read.csv function. Additionally lets look at our data by using the glimpse function.
+```{r}
+BA_reviews <- read_csv("C:/Users/OK/Desktop/British Airways/BA_reviews.csv")
+
+View(BA_reviews)
+data <- BA_reviews
+```
+```{r}
+glimpse(data)
+```
+From the above output we can see that we have 2 columns and 3625 observations. Columns are self explanatory. We don’t require all columns for our analysis so its better to either remove them or select only the desired columns which is in our case is:
+
+Reviews Column. It contains various reviews by different customers. We will analyse only reviews to identify hidden patterns.
+
+Cleaning Preparation of Data for Modeling
+
+```{r}
+glimpse(data)
+```
+Data must first be cleaned and transformed in accordance with model criteria before any analysis can be performed. Text data frequently contains stop words, white spaces, and special characters. As they don't add anything to analysis, it is advised to get rid of them. We have the option to do all of these processes at once or we can accomplish it step-by-step utilizing built-in routines. The functions that Unnest_tokens provide are numerous. It can convert text to lowercase, delete white spaces, and remove punctuation. Let's carry out all of these actions using unnest_tokens.
+```{r}
+# using unnest_tokens() with stopwords
+data_review <- data %>%
+  unnest_tokens(word, reviews) %>%
+  anti_join(stop_words)
+
+
+head(data_review)
+```
+
+unnest_tokens() has done some cleaning removed punctuation and white space, transformed to lowercase etc. We can see in the above output that each row contains only one word. Means one word per row. Its a really large data set we can have a look at the total amount of rows by using the dim function.
+
+```{r}
+dim(data_review)
+```
+
+In total we have 349943 rows. Lets count the words and arrange them in descending order to see which words occur more frequently.
+
+```{r}
+# counting words
+ data_review %>%
+   count(word) %>%
+   arrange(desc(n)) %>%
+   head()
+```
+
+Some popular terms, like the, and, to, etc., still appear more frequently. I need to get rid of these words in order to examine an individual word choice. An anti_join can be used to organize the stop-word list in the text.
+
+```{r}
+# using unnest_tokens() with stopwords
+ data_review2 <- data %>%
+  unnest_tokens(word, reviews) %>%
+  anti_join(stop_words)
+```
+
+lets count the words again to see if we manage to resolve the issue successfully.
+
+```{r}
+# counting words again
+data_review2 %>%
+  count(word) %>%
+  arrange(desc(n)) %>%
+  head()
+```
+
+We can see from the above output that now the most frequent words are flight, BA (british airways) and service etc which actually reflect the actual and meaningful content.
+
+Visualization
+
+Instead of looking at the data frame its more appealing, attractive and understandable to visualize our cleaned data. Lets count the words and arrange them in descending order the filter out words that appear 300 times.
+
+```{r}
+word_counts <- data_review2 %>%
+  count(word) %>%
+  filter(n>300) %>%
+  arrange(desc(n))
+```
+
+Now lets pass this word_count to ggplot function and flip the axis to see frequency of words.
+
+```{r}
+ggplot(word_counts, aes(x=word, y=n)) + 
+  geom_col() +
+  coord_flip() +
+  ggtitle("Review Word Counts")
+```
+
+We can see in the above output each word against its count. Lets reorder them and then visualize them from largest to smallest.
+
+```{r}
+# reorder what (word) by what (n)
+word_counts <- data_review2 %>%
+  count(word) %>%
+  filter(n>300) %>%
+  mutate(word2 = fct_reorder(word, n))
+
+  word_counts
+```
+
+
+```{r}
+
+
+
+# reorder what (word) by what (n)
+word_counts <- data_review2 %>%
+  count(word) %>%
+  filter(n>300) %>%
+  mutate(word2 = fct_reorder(word, n))
+
+# now this plot
+# with new ordered column x = word2
+# is arranged by word count
+# and is far better to read:
+ggplot(word_counts, aes(x=word2, y=n)) + 
+  geom_col() +
+  coord_flip() +
+  ggtitle("Review Word Counts")
+```
+Insight: From the diagram above we can get a glimpse showing that words like flight, BA and Service are most talked about in reviews. however without knowing what topic each review falls under makes it tricky to make recommedations.   
+
+
+Topic Modeling (LDA)
+
+The next step is to execute Latent Dirichlet Allocation after cleaning and visualisation. It uses an iterative method to find subjects based on discrete word frequency. LDA is founded on the premise that documents typically refer to a small number of topics and are composed of few words. However, we must first make a Document Term Matrix. A mathematical matrix called a document-term matrix reveals the frequency of terms used in a group of documents. In a document-term matrix, columns represent terms in the collection and rows represent documents in the collection.
+
+```{r}
+data_review2
+
+data_review2 <- data_review2 %>%
+  clean_names()
+
+
+BA_reviews <- data_review2 %>%
+  count(x1, word) %>%
+  cast_dtm(x1, word, n) %>%
+  as.matrix()
+
+BA_reviews
+
+```
+
+After creating reviews data in a matrix now lets finally perform and implement LDA. We can use the LDA() function from the topic models package, setting k = 2, to create a two-topic LDA model.
+
+```{r}
+review_lda <- LDA(BA_reviews,
+                  k = 2,
+                  method = "Gibbs",
+                  control = list(seed = 1234))
+```
+
+We can use the glimpse function to see whats included in the lda_out object.
+
+```{r}
+glimpse(review_lda)
+```
+its a really long object. However k - the number of topics that we specified and beta - the word probabilities to define the topics. Let’s evaluate LDA model output the most important LDA model output are the topics themselves i.e. a dictionary of all words in the corpus sorted according to the probability that each word occurs as a part of that topic.function tidy() takes the matrix of topic probabilities “beta”and put it into a form that is easy visualized using ggplot2
+
+```{r}
+review_topics <- tidy(review_lda, matrix = "beta")
+```
+
+
+```{r}
+review_topics %>%
+  arrange(desc(beta))
+```
+
+The output from the previous section just reveals the components of the subjects; it gives no indication of their meaning. The main goal is to identify distinct themes that don't overlap. So let's run the modeling process once more.
+
+
+```{r}
+
+top_terms <- review_topics %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 5) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+top_terms
+
+```
+
+
+```{r}
+
+top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+Insight
+
+Although its interpretation of topics is quite subjective in nature. The first topic (topic 1) seems to be a collection of words describing flight experience as it comprises of words such as "Seat", "Food", "Class", "Crew" all of which suggest experience relating to "Service", As for the the second topic (topic 2) it  is more related to British Airways in general. 
