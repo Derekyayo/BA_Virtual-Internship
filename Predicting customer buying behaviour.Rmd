@@ -1,0 +1,116 @@
+---
+title: "Customer Booking EDA"
+author: "Usman Yahaya"
+date: "2023-09-05"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### British Airways Customer Booking Exploratory Data Analysis
+
+**Exploratory data analysis**
+
+First, we must explore the data in order to better understand what we have and the statistical properties of the data set.
+```{r}
+library(tidyverse)
+```
+
+
+## Import necessary libraries and load data set
+```{r}
+customer_booking <- read_csv("C:/Users/OK/Desktop/British Airways/customer_booking.csv")
+
+df <- customer_booking
+View(df)
+```
+
+## Get Glimpse of data
+
+The .head() method allows for the view of first 5 rows in the dataset, this is useful for visual inspection of variables.
+
+```{r}
+head(df)
+```
+
+
+```{r pressure, echo=FALSE}
+str(df)
+```
+the .str() method gives us a data description, telling us the names of the columns, their data types and how many null values we have. Fortunately, we have no null values. It looks like some of these columns should be converted into different data types, e.g. flight_day.
+
+To provide more context, below is a more detailed data description, explaining exactly what each column means:
+
+* num_passengers = number of passengers travelling
+* sales_channel = sales channel booking was made on
+* trip_type = trip Type (Round Trip, One Way, Circle Trip)
+* purchase_lead = number of days between travel date and booking date
+* length_of_stay = number of days spent at destination
+* flight_hour = hour of flight departure
+* flight_day = day of week of flight departure
+* route = origin -> destination flight route
+* booking_origin = country from where booking was made
+* wants_extra_baggage = if the customer wanted extra baggage in the booking
+* wants_preferred_seat = if the customer wanted a preferred seat in the booking
+* wants_in_flight_meals = if the customer wanted in-flight meals in the booking
+* flight_duration = total duration of flight (in hours)
+* booking_complete = flag indicating if the customer completed the booking
+
+
+Before we compute any statistics on the data, we would do some necessary data conversion. 
+
+```{r}
+mapping <- c("Mon" = 1, "Tue" = 2, "Wed" = 3, "Thu" = 4, "Fri" = 5, "Sat" = 6, "Sun" = 7)
+
+df <- df %>% mutate(flight_day = mapping[flight_day])
+```
+
+
+### Data Visualisation
+
+Now to visualize insights to assist decision making.
+
+#### No. of flights on each day of the week
+```{r}
+ggplot(data = df, mapping = aes(x = reorder(as.factor(flight_day), -table(flight_day)[as.factor(flight_day)]))) +
+  geom_bar(aes(fill = flight_day)) +
+  xlab("Flight Day") +
+  ylab("Count") +
+  ggtitle("Count of Flights by Day")
+```
+
+# No. of flights on each day of the week
+```{r}
+ggplot(data = df) + 
+  geom_bar(mapping = aes(x = flight_day, fill = booking_complete, position = "dodge"))
+```
+**Note**
+
+* **No of flights is max on Monday and lowest on Saturday.**
+
+
+
+# Frequently used Booking channel
+
+```{r}
+ggplot(data = df) + 
+  geom_bar(mapping = aes(x = sales_channel, fill = sales_channel))
+```
+
+# Most frequently opted trip type
+
+```{r}
+ggplot(data = df) + 
+  geom_bar(mapping = aes(x = trip_type, color = trip_type))
+```
+
+**Note**
+
+* **Most passengers prefer to book round trip**
+
+
+
